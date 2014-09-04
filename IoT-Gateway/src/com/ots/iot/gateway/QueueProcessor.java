@@ -19,20 +19,28 @@ public class QueueProcessor implements Runnable {
 
 	@Override
 	public void run() {
-		log.info("Starting queue processor thread with initial capacity "+queue.remainingCapacity());
-		while(true) {
-			log.debug("Queue size: "+queue.size()+" ("+queue.remainingCapacity()+")");
-			String message;
-			try {
-				message = queue.take();
-				if (message != null && mqtt != null && mqtt.isConnected()) {
-					mqtt.sendMessage(message);
-				}		
-			} catch (InterruptedException e) {
-				log.error(e.getMessage());
+		log.info("Starting queue processor thread with initial capacity "+queue.remainingCapacity());	
+		while (true) {			
+			if (mqtt != null && mqtt.isConnected()) {
+				String message;
+				try {
+					log.debug("Queue size: "+queue.size()+" ("+queue.remainingCapacity()+")");
+					message = queue.take();
+					if (message != null) {
+						mqtt.sendMessage(message);
+					}		
+				} catch (InterruptedException e) {
+					log.error(e.getMessage());
+				}
+			} else {
+				log.warn("Gateway has lost connection with the Mqtt broker - will retry connection is 5s");
+				try {
+					Thread.sleep(5000);
+				} catch (InterruptedException e) {
+					log.error(e.getMessage());
+				}
+				mqtt.reconnect();
 			}
-			
-				
 		}
 	}
 

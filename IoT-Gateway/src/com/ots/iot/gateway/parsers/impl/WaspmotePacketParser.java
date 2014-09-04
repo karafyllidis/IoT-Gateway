@@ -154,15 +154,20 @@ public class WaspmotePacketParser implements XbeePacketParser {
     					float sensorVal = WaspFloatToFloat(value);
     					// 4 digits 2 precision points
     					strVal = String.format("%1$4.2f", sensorVal);    					
-    				} 
+    				} else if (sensor.getVariableType() == VariableType.INT) {
+    					int sensorVal = WaspIntToInt(value);
+    					strVal = String.format("%1$f", sensorVal);
+    				}
     				values[k] = strVal;
     				startPos = dataEndPos;
     			}    			
-    			for (int j = 0; j < values.length; j++)
+    			for (int j = 0; j < values.length; j++) {
+    				if (j > 0)
+    					message.append(values[j]+";");
     				message.append(values[j]);
-    			
+    			}
     			message.append(DASH);
-    			startPos = startPos + 1;    			
+    			//startPos = startPos + 1;    			
     		}
     		    		
     		
@@ -173,30 +178,62 @@ public class WaspmotePacketParser implements XbeePacketParser {
     	return message.toString();		
 	}
 	
+	public static int WaspIntToInt(int sensorValue[]) {
+		// reversing order of bytes		
+		int reversedValue[] = reverseArray(sensorValue);
+		// to hex				
+		String hex = hexArrayToString(reversedValue);
+		int val = Integer.parseInt(hex, 16);
+		return val;
+	}
+	
 	public static float WaspFloatToFloat(int sensorValue[]) {
 		
-		// reversing order of bytes
-		int j = sensorValue.length;
-		int reversedValue[] = new int[j];    				
-		for (int i = 0; i < sensorValue.length; i++) {
-			j--;
-			reversedValue[j] = sensorValue[i];
-		}
+		// reversing order of bytes		
+		int reversedValue[] = reverseArray(sensorValue);
+		// to hex				
+		String hex = hexArrayToString(reversedValue);
 		
-		// to hex
-		String hex = ByteUtils.toBase16(reversedValue);
-		hex = hex.replaceAll(",", "");
-		hex = hex.replaceAll("0x", "");
-		int hexToInt = Integer.parseInt(hex, 16);
+		int hexToInt = Integer.parseInt(hex, 16);	
 		float floatValue = Float.intBitsToFloat(hexToInt);
 		
 		return floatValue;		
 	}
+	
+	private static int[] reverseArray(int[] array) {		
+		int j = array.length;
+		int reversedArray[] = new int[j];    				
+		for (int i = 0; i < array.length; i++) {
+			j--;
+			reversedArray[j] = array[i];
+		}
+		return reversedArray;
+	}
+	
+	private static String hexArrayToString(int hexValues[]) {
+		String hex = ByteUtils.toBase16(hexValues);
+		hex = hex.replaceAll(",", "");
+		hex = hex.replaceAll("0x", "");
+		return hex;
+	}
 
 	private String handleAsciiData(int[] data) {
-		
 		log.debug("Handling ASCII packet data");
-		return ByteUtils.toString(data);
+		
+		StringBuilder message = new StringBuilder();
+		
+		// remove start delimiter string and framesequence, keep the others
+    	String dataStr = ByteUtils.toString(data);
+    	int firstDashPos = dataStr.indexOf(DASH);
+    	int frameSeqStartPos = dataStr.indexOf(DASH, dataStr.indexOf(DASH, firstDashPos + 1) + 1);
+    	int frameSeqEndPos = dataStr.indexOf(DASH, frameSeqStartPos + 1);
+    	
+    	String firstPart = dataStr.substring(firstDashPos, frameSeqStartPos);
+    	String secondPart = dataStr.substring(frameSeqEndPos);
+    	message.append(firstPart);
+    	message.append(secondPart);
+    	
+		return message.toString();
 	}
 
 }

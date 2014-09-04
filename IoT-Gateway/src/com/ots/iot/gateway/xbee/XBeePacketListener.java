@@ -37,7 +37,7 @@ public class XBeePacketListener implements PacketListener {
 	    if (data != null) {	    	
 	    	String message = waspmoteParser.parse(data); 
 	    	if (message != null) {
-		    	log.debug("Handling message: "+message);
+		    	log.debug("Pushing message into queue: "+message);
 		    	try {
 					queue.offer(message, 10, TimeUnit.SECONDS);				
 				} catch (InterruptedException e) {
