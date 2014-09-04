@@ -79,7 +79,7 @@ public class MqttConnection {
 		mqttMsg.setQos(this.qos);
 		mqttMsg.setRetained(this.retained);		
 		try {
-			log.info("Publishing message: "+mqttMsg);
+			log.info("Publishing message: " + mqttMsg + " to topic \""+this.topic+"\"");
 			client.publish(this.topic, mqttMsg);		
 		} catch (MqttPersistenceException e) {
 			log.error(e.getMessage());			
